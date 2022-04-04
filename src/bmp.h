@@ -9,6 +9,8 @@
  * https://github.com/JacobLinCool/cimple-bmp/
  */
 
+#ifndef _CIMPLE_BMP_H
+#define _CIMPLE_BMP_H
  // #region Headers
 #include <inttypes.h>
 #include <math.h>
@@ -584,3 +586,5 @@ u8 read_bmp(string path, BMP* bmp) {
     return BMP_ERROR_NONE;
 }
 // #endregion
+
+#endif // _CIMPLE_BMP_H
