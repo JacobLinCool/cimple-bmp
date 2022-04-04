@@ -1,0 +1,13 @@
+*
+!*/
+!*.*
+!Makefile
+!LICENSE
+
+*.out
+*.exe
+*.o
+
+**/.DS_Store
+
+img/*.bmp
