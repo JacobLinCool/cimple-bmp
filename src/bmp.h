@@ -2,7 +2,7 @@
  * @file bmp.h
  * @author JacobLinCool (hi@jacoblin.cool)
  * @brief BMP image library.
- * @version 0.1.0
+ * @version 1.0.0
  * @date 2022-04-01
  *
  * @copyright Copyright (c) 2022 JacobLinCool
@@ -40,16 +40,16 @@ typedef char* string;
 #define BMP_MAGIC 0x4D42 // "BM"
 
 typedef struct Mask {
-    u32 blue;
-    u32 green;
     u32 red;
+    u32 green;
+    u32 blue;
     u32 alpha;
 } __attribute__((packed)) Mask;
 
-static Mask Mask_555 = { 0b0111110000000000U, 0b0000001111100000U, 0b0000000000011111U, 0 };
+static Mask Mask_555 = { 0x1FU << 10U, 0x1FU << 5U, 0x1FU << 0U, 0 };
 static Mask Mask_565 = { 0b1111100000000000U, 0b0000011111100000U, 0b0000000000011111U, 0 };
-static Mask Mask_888 = { 0b11111111U << 0U, 0b11111111U << 8U, 0b11111111U << 16U, 0 };
-static Mask Mask_8888 = { 0b11111111U << 0U, 0b11111111U << 8U, 0b11111111U << 16U, 0b11111111U << 24U };
+static Mask Mask_888 = { 0xFFU << 16U, 0xFFU << 8U, 0xFFU << 0U, 0 };
+static Mask Mask_8888 = { 0xFFU << 16U, 0xFFU << 8U, 0xFFU << 0U, 0xFFU << 24U };
 
 typedef struct Pixel {
     u8 red;
@@ -475,20 +475,39 @@ u8 write_bmp(BMP* bmp, string path, u8 red_bits, u8 green_bits, u8 blue_bits, u8
         return BMP_ERROR_FILE_ERROR;
     }
 
+    i32 width = bmp->header->info_header.width;
+    i32 height = bmp->header->info_header.height;
+    u64 row_size = ((width * bpp + 31) / 32) * 4;
+    u8 pixel_size = bpp / 8;
+
     BITMAPV3INFOHEADER* header = calloc(1, sizeof(BITMAPV3INFOHEADER));
-    memcpy(header, bmp->header, sizeof(BITMAPV3INFOHEADER));
     BITMAP_HEADER* file_header = (BITMAP_HEADER*)header;
     BITMAPINFOHEADER* info_header = (BITMAPINFOHEADER*)header;
-    info_header->bpp = bpp;
-    info_header->bitmap_size = info_header->width * info_header->height * (bpp / 8);
-    file_header->size = sizeof(BITMAPV3INFOHEADER) + info_header->bitmap_size;
+
     header->mask = mask;
+
+    info_header->header_size = sizeof(BITMAPV3INFOHEADER) - sizeof(BITMAP_HEADER);
+    info_header->width = width;
+    info_header->height = height;
+    info_header->planes = 1;
+    info_header->bpp = bpp;
+    info_header->compression = 3;
+    info_header->bitmap_size = abs(height) * row_size;
+    info_header->res_height = 9449;
+    info_header->res_width = 9449;
+
+    file_header->magic = BMP_MAGIC;
+    file_header->offset = sizeof(BITMAPV3INFOHEADER);
+    file_header->size = sizeof(BITMAPV3INFOHEADER) + info_header->bitmap_size;
+
+    if (alpha_bits == 0 && bpp == 24) {
+        info_header->compression = 0;
+    }
 
     fwrite(header, sizeof(BITMAPV3INFOHEADER), 1, file);
 
-    u64 row_size = ((info_header->width * info_header->bpp + 31) / 32) * 4;
-    u64 padding = row_size - (info_header->width * info_header->bpp / 8);
-    u8* pad = calloc(padding, sizeof(u8));
+    u64 padding_size = row_size - (width * pixel_size);
+    u8* padding = calloc(padding_size, sizeof(u8));
     for (i32 y = info_header->height - 1; y >= 0; y--) {
         for (i32 x = 0; x < info_header->width; x++) {
             u32 pixel_data = 0;
@@ -498,16 +517,14 @@ u8 write_bmp(BMP* bmp, string path, u8 red_bits, u8 green_bits, u8 blue_bits, u8
             pixel_data |= (u32)((f64)bmp->pixels[y][x]->red / 0xFF * ((1UL << red_bits) - 1)) << (blue_bits + green_bits);
             pixel_data |= (u32)((f64)bmp->pixels[y][x]->alpha / 0xFF * ((1UL << alpha_bits) - 1)) << (blue_bits + green_bits + red_bits);
 
-            fwrite(&pixel_data, bpp / 8, 1, file);
+            fwrite(&pixel_data, pixel_size, 1, file);
         }
 
-        if (padding != 0) {
-            fwrite(pad, padding, 1, file);
-        }
+        fwrite(padding, padding_size, 1, file);
     }
 
     fclose(file);
-    free(pad), free(header);
+    free(padding), free(header);
     return BMP_ERROR_NONE;
 }
 
@@ -562,7 +579,19 @@ BMP* create_bmp(u64 width, u64 height, Pixel pixel) {
     return bmp;
 }
 
-u8 read_bmp(string path, BMP* bmp) {
+static inline u8 get_shift(u32 mask) {
+    if (mask == 0) {
+        return 0;
+    }
+    u8 shift = 0;
+    while (mask ^ 0x1) {
+        mask >>= 1;
+        shift++;
+    }
+    return shift;
+}
+
+u8 read_bmp(string path, BMP** bmp) {
     FILE* bmp_file = fopen(path, "rb");
     if (bmp_file == NULL) {
         return BMP_ERROR_FILE_ERROR;
@@ -585,16 +614,16 @@ u8 read_bmp(string path, BMP* bmp) {
     fread(file, file_size, 1, bmp_file);
     fclose(bmp_file);
 
-    bmp = calloc(1, sizeof(BMP));
-    bmp->header = calloc(1, sizeof(BITMAPV3INFOHEADER));
+    *bmp = calloc(1, sizeof(BMP));
+    (*bmp)->header = calloc(1, sizeof(BITMAPV3INFOHEADER));
 
     u32 header_size = ((BITMAPINFOHEADER*)file)->header_size + sizeof(BITMAP_HEADER);
     u32 max_header_size = sizeof(BITMAPV3INFOHEADER) - sizeof(BITMAP_HEADER);
-    memcpy(bmp->header, file, header_size > max_header_size ? max_header_size : header_size);
-    BITMAPINFOHEADER* info_header = (BITMAPINFOHEADER*)bmp->header;
+    memcpy((*bmp)->header, file, header_size > max_header_size ? max_header_size : header_size);
+    BITMAPINFOHEADER* info_header = (BITMAPINFOHEADER*)(*bmp)->header;
 
-    Mask mask = bmp->header->mask;
-    if (mask.red == 0 && mask.green == 0 && mask.blue == 0) {
+    Mask mask = (*bmp)->header->mask;
+    if (info_header->compression == 0) {
         switch (info_header->bpp) {
         case 16:
             mask = Mask_555;
@@ -602,33 +631,46 @@ u8 read_bmp(string path, BMP* bmp) {
         case 24:
             mask = Mask_888;
             break;
+        case 32:
+            mask = Mask_8888;
+            break;
         default:
-            free(file), free(bmp->header), free(bmp);
+            free(file), free((*bmp)->header), free((*bmp));
             return BMP_ERROR_INVALID_HEADER;
             break;
         }
     }
 
-    bmp->pixels = calloc(info_header->height, sizeof(Pixel*));
-    for (i32 i = 0; i < info_header->height; i++) {
-        bmp->pixels[i] = calloc(info_header->width, sizeof(Pixel*));
+    u8 red_shift = get_shift(mask.red);
+    u8 green_shift = get_shift(mask.green);
+    u8 blue_shift = get_shift(mask.blue);
+    u8 alpha_shift = get_shift(mask.alpha);
+    if (mask.alpha == 0) {
+        red_shift -= blue_shift;
+        green_shift -= blue_shift;
+        blue_shift = 0;
     }
 
-    u8* data = file + ((BITMAP_HEADER*)bmp->header)->offset;
+    (*bmp)->pixels = calloc(info_header->height, sizeof(Pixel**));
+    for (i32 i = 0; i < info_header->height; i++) {
+        (*bmp)->pixels[i] = calloc(info_header->width, sizeof(Pixel*));
+    }
+
+    u8* data = file + ((BITMAP_HEADER*)(*bmp)->header)->offset;
     u64 offset = 0;
     u64 row_size = ((info_header->width * info_header->bpp + 31) / 32) * 4;
     for (i32 y = 0; y < info_header->height; y++) {
         for (i32 x = 0; x < info_header->width; x++) {
             Pixel* pixel = calloc(1, sizeof(Pixel));
 
-            u32 pixel_data = data[offset];
+            u32 pixel_data = *(u32*)(data + offset);
 
-            pixel->blue = pixel_data & mask.blue;
-            pixel->green = pixel_data & mask.green;
-            pixel->red = pixel_data & mask.red;
-            pixel->alpha = pixel_data & mask.alpha;
+            pixel->blue = (pixel_data & mask.blue) >> blue_shift;
+            pixel->green = (pixel_data & mask.green) >> green_shift;
+            pixel->red = (pixel_data & mask.red) >> red_shift;
+            pixel->alpha = mask.alpha ? ((pixel_data & mask.alpha) >> alpha_shift) : 0xFF;
 
-            bmp->pixels[info_header->height - 1 - y][x] = pixel;
+            (*bmp)->pixels[info_header->height - 1 - y][x] = pixel;
             offset += info_header->bpp / 8;
         }
 
@@ -637,7 +679,7 @@ u8 read_bmp(string path, BMP* bmp) {
         }
     }
 
-    setup_bmp_methods(bmp);
+    setup_bmp_methods(*bmp);
 
     free(file);
     return BMP_ERROR_NONE;
