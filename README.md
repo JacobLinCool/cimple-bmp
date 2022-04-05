@@ -2,7 +2,7 @@
 
 # Cimple BMP
 
-![plot](./img/plot.jpg)
+![plot](./img/plot.png)
 
 Simple BMP Library in C.
 
@@ -138,16 +138,27 @@ typedef struct Pixel {
 
 There are some predefined pixel types:
 
-- `PIXEL_BLACK`
-- `PIXEL_WHITE`
-- `PIXEL_RED`
-- `PIXEL_GREEN`
-- `PIXEL_BLUE`
-- `PIXEL_YELLOW`
-- `PIXEL_CYAN`
-- `PIXEL_MAGENTA`
+```c
+#define PIXEL_BLACK ((Pixel){ 0, 0, 0, 0xFF })
+#define PIXEL_WHITE ((Pixel){ 0xFF, 0xFF, 0xFF, 0xFF })
+#define PIXEL_RED ((Pixel){ 0xFF, 0, 0, 0xFF })
+#define PIXEL_GREEN ((Pixel){ 0, 0xFF, 0, 0xFF })
+#define PIXEL_BLUE ((Pixel){ 0, 0, 0xFF, 0xFF })
+#define PIXEL_YELLOW ((Pixel){ 0xFF, 0xFF, 0, 0xFF })
+#define PIXEL_CYAN ((Pixel){ 0, 0xFF, 0xFF, 0xFF })
+#define PIXEL_MAGENTA ((Pixel){ 0xFF, 0, 0xFF, 0xFF })
+#define PIXEL_BLACK_TRANSPARENT ((Pixel){ 0, 0, 0, 0 })
+#define PIXEL_WHITE_TRANSPARENT ((Pixel){ 0xFF, 0xFF, 0xFF, 0 })
+#define PIXEL_RED_TRANSPARENT ((Pixel){ 0xFF, 0, 0, 0 })
+#define PIXEL_GREEN_TRANSPARENT ((Pixel){ 0, 0xFF, 0, 0 })
+#define PIXEL_BLUE_TRANSPARENT ((Pixel){ 0, 0, 0xFF, 0 })
+#define PIXEL_YELLOW_TRANSPARENT ((Pixel){ 0xFF, 0xFF, 0, 0 })
+#define PIXEL_CYAN_TRANSPARENT ((Pixel){ 0, 0xFF, 0xFF, 0 })
+#define PIXEL_MAGENTA_TRANSPARENT ((Pixel){ 0xFF, 0, 0xFF, 0 })
+#define PIXEL_TRANSPARENT PIXEL_BLACK_TRANSPARENT
+```
 
-![colors](./img/colors.jpg)
+![colors](./img/colors_888.png)
 
 You can also use this to make your pixel:
 
@@ -159,12 +170,45 @@ bmp->fill(bmp, (Pixel){ 0, 35, 102, 0 });
 ### Pixel Blend
 
 ```c
-Pixel blend(Pixel a, Pixel b);
+Pixel blend(Pixel a, Pixel b, f64 weight);
 
 // usage
-Pixel PIXEL_GRAY = blend(PIXEL_BLACK, PIXEL_WHITE);
+Pixel PIXEL_GRAY = blend(PIXEL_BLACK, PIXEL_WHITE, 0.5);
 ```
 
 This function will blend the two source pixels and return the result.
 
-> The images in this README are JPG files, which are converted from the BMP files.
+### Pixel Over
+
+```c
+Pixel pixel_over(Pixel front, Pixel back);
+```
+
+The function will return the result of the pixel over operation (alpha blending).
+
+### `RGB` & `RGBA`
+
+```c
+Pixel RGBA(u32 hex);
+Pixel RGB(u32 hex);
+
+// usage
+Pixel PIXEL_RED = RGB(0xFF0000);
+Pixel PIXEL_GREEN_TRANSPARENT = RGBA(0x00FF0080);
+```
+
+These two functions will convert the hexadecimal color value to a pixel.
+
+## Images
+
+![Plot](img/plot.png)
+
+![Colors](img/colors_888.png)
+
+![Maldives](img/maldives_555.png)
+
+![Random Blocks](img/random_blocks.png)
+
+![Random Circles](img/random_circles.png)
+
+> The images in this README are PNG files, which are converted from the BMP files.
