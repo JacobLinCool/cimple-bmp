@@ -86,7 +86,7 @@ i32 main() {
 
     BMP* bmp = create_bmp(WIDTH, HEIGHT, PIXEL_WHITE);
 
-    Pixel PIXEL_GRAY = blend(PIXEL_BLACK, PIXEL_WHITE);
+    Pixel PIXEL_GRAY = blend(PIXEL_BLACK, PIXEL_WHITE, 0.5);
 
     // draw background
     bmp->draw(bmp, PIXEL_YELLOW, &draw_background);
@@ -100,12 +100,12 @@ i32 main() {
     bmp->draw(bmp, PIXEL_MAGENTA, &draw_cosine);
 
     // draw tan and cot
-    bmp->draw(bmp, blend(PIXEL_CYAN, PIXEL_YELLOW), &draw_tan);
-    bmp->draw(bmp, blend(PIXEL_MAGENTA, PIXEL_YELLOW), &draw_cot);
+    bmp->draw(bmp, blend(PIXEL_CYAN, PIXEL_YELLOW, 0.5), &draw_tan);
+    bmp->draw(bmp, blend(PIXEL_MAGENTA, PIXEL_YELLOW, 0.5), &draw_cot);
 
     // draw sec and csc
-    bmp->draw(bmp, blend(PIXEL_CYAN, PIXEL_BLUE), &draw_sec);
-    bmp->draw(bmp, blend(PIXEL_MAGENTA, PIXEL_BLUE), &draw_csc);
+    bmp->draw(bmp, blend(PIXEL_CYAN, PIXEL_BLUE, 0.5), &draw_sec);
+    bmp->draw(bmp, blend(PIXEL_MAGENTA, PIXEL_BLUE, 0.5), &draw_csc);
 
     bmp->save(bmp, "img/plot.bmp", 8, 8, 8, 0);
 
