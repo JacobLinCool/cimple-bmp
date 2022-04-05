@@ -295,10 +295,11 @@ u64 bmp_rect(BMP* bmp, i64 from_x, i64 from_y, i64 width, i64 height, Pixel pixe
     for (i64 y = 0; y < height; y++) {
         for (i64 x = 0; x < width; x++) {
             if (bmp_safe(bmp, from_x + x, from_y + y)) {
-                bmp->pixels[from_y + y][from_x + x]->red = pixel.red;
-                bmp->pixels[from_y + y][from_x + x]->green = pixel.green;
-                bmp->pixels[from_y + y][from_x + x]->blue = pixel.blue;
-                bmp->pixels[from_y + y][from_x + x]->alpha = pixel.alpha;
+                Pixel blended = pixel_over(pixel, *bmp->pixels[from_y + y][from_x + x]);
+                bmp->pixels[from_y + y][from_x + x]->red = blended.red;
+                bmp->pixels[from_y + y][from_x + x]->green = blended.green;
+                bmp->pixels[from_y + y][from_x + x]->blue = blended.blue;
+                bmp->pixels[from_y + y][from_x + x]->alpha = blended.alpha;
                 count++;
             }
         }
@@ -322,14 +323,13 @@ u64 bmp_circle(BMP* bmp, i64 center_x, i64 center_y, i64 radius, Pixel pixel) {
 
     for (i64 y = center_y - radius; y <= center_y + radius; y++) {
         for (i64 x = center_x - radius; x <= center_x + radius; x++) {
-            if (bmp_safe(bmp, x, y)) {
-                if ((x - center_x) * (x - center_x) + (y - center_y) * (y - center_y) <= radius * radius) {
-                    bmp->pixels[y][x]->red = pixel.red;
-                    bmp->pixels[y][x]->green = pixel.green;
-                    bmp->pixels[y][x]->blue = pixel.blue;
-                    bmp->pixels[y][x]->alpha = pixel.alpha;
-                    count++;
-                }
+            if (bmp_safe(bmp, x, y) && ((x - center_x) * (x - center_x) + (y - center_y) * (y - center_y) <= radius * radius)) {
+                Pixel blended = pixel_over(pixel, *bmp->pixels[y][x]);
+                bmp->pixels[y][x]->red = blended.red;
+                bmp->pixels[y][x]->green = blended.green;
+                bmp->pixels[y][x]->blue = blended.blue;
+                bmp->pixels[y][x]->alpha = blended.alpha;
+                count++;
             }
         }
     }
@@ -405,10 +405,11 @@ u64 bmp_draw(BMP* bmp, Pixel pixel, bool (*condition)(BMP*, i64, i64)) {
     for (i64 y = 0; y < bmp->header->info_header.height; y++) {
         for (i64 x = 0; x < bmp->header->info_header.width; x++) {
             if (bmp_safe(bmp, x, y) && (*condition)(bmp, x, y)) {
-                bmp->pixels[y][x]->red = pixel.red;
-                bmp->pixels[y][x]->green = pixel.green;
-                bmp->pixels[y][x]->blue = pixel.blue;
-                bmp->pixels[y][x]->alpha = pixel.alpha;
+                Pixel blended = pixel_over(pixel, *bmp->pixels[y][x]);
+                bmp->pixels[y][x]->red = blended.red;
+                bmp->pixels[y][x]->green = blended.green;
+                bmp->pixels[y][x]->blue = blended.blue;
+                bmp->pixels[y][x]->alpha = blended.alpha;
                 count++;
             }
         }
