@@ -5,7 +5,7 @@
 i32 main() {
     char* tag_1 = "create 810,000 (900x900) bitmap";
     timing_start(tag_1);
-    BMP* bmp = create_bmp(900, 900, PIXEL_BLACK);
+    BMP* bmp = create_bmp(900, 900, PIXEL_TRANSPARENT);
     printf("%s: %Lg ms\n", tag_1, timing_check(tag_1));
 
     char* tag_2 = "rect 135,000 (450x300) with PIXEL_WHITE";
@@ -25,9 +25,9 @@ i32 main() {
     bmp->rect(bmp, 300, 600, 300, 300, PIXEL_CYAN);
     bmp->rect(bmp, 600, 600, 300, 300, PIXEL_MAGENTA);
 
-    bmp->circle(bmp, 450, 150, 100, (Pixel) { 0x00, 0xFF, 0x7F, 0x00 });
+    bmp->circle(bmp, 450, 150, 100, RGBA(0x00FF7F80));
 
-    Pixel Orange = { 0xFF, 0xA5, 0x00, 0x00 };
+    Pixel Orange = RGB(0xFFA500);
     bmp->line(bmp, 300, 100, 600, 100, 0, Orange);
     bmp->line(bmp, 300, 120, 600, 180, 1, Orange);
     bmp->line(bmp, 300, 180, 600, 120, 2, Orange);
