@@ -37,7 +37,7 @@ typedef char* string;
 // #endregion
 
 // #region BMP constants and structs.
-#define BMP_MAGIC 19778 // "BM"
+#define BMP_MAGIC 0x4D42 // "BM"
 
 typedef struct Mask {
     u32 blue;
@@ -58,14 +58,23 @@ typedef struct Pixel {
     u8 alpha;
 } Pixel;
 
-static Pixel PIXEL_BLACK = { 0, 0, 0, 0 };
-static Pixel PIXEL_WHITE = { 0xFF, 0xFF, 0xFF, 0 };
-static Pixel PIXEL_RED = { 0xFF, 0, 0, 0 };
-static Pixel PIXEL_GREEN = { 0, 0xFF, 0, 0 };
-static Pixel PIXEL_BLUE = { 0, 0, 0xFF, 0 };
-static Pixel PIXEL_CYAN = { 0, 0xFF, 0xFF, 0 };
-static Pixel PIXEL_YELLOW = { 0xFF, 0xFF, 0, 0 };
-static Pixel PIXEL_MAGENTA = { 0xFF, 0, 0xFF, 0 };
+#define PIXEL_BLACK ((Pixel){ 0, 0, 0, 0xFF })
+#define PIXEL_WHITE ((Pixel){ 0xFF, 0xFF, 0xFF, 0xFF })
+#define PIXEL_RED ((Pixel){ 0xFF, 0, 0, 0xFF })
+#define PIXEL_GREEN ((Pixel){ 0, 0xFF, 0, 0xFF })
+#define PIXEL_BLUE ((Pixel){ 0, 0, 0xFF, 0xFF })
+#define PIXEL_YELLOW ((Pixel){ 0xFF, 0xFF, 0, 0xFF })
+#define PIXEL_CYAN ((Pixel){ 0, 0xFF, 0xFF, 0xFF })
+#define PIXEL_MAGENTA ((Pixel){ 0xFF, 0, 0xFF, 0xFF })
+#define PIXEL_BLACK_TRANSPARENT ((Pixel){ 0, 0, 0, 0 })
+#define PIXEL_WHITE_TRANSPARENT ((Pixel){ 0xFF, 0xFF, 0xFF, 0 })
+#define PIXEL_RED_TRANSPARENT ((Pixel){ 0xFF, 0, 0, 0 })
+#define PIXEL_GREEN_TRANSPARENT ((Pixel){ 0, 0xFF, 0, 0 })
+#define PIXEL_BLUE_TRANSPARENT ((Pixel){ 0, 0, 0xFF, 0 })
+#define PIXEL_YELLOW_TRANSPARENT ((Pixel){ 0xFF, 0xFF, 0, 0 })
+#define PIXEL_CYAN_TRANSPARENT ((Pixel){ 0, 0xFF, 0xFF, 0 })
+#define PIXEL_MAGENTA_TRANSPARENT ((Pixel){ 0xFF, 0, 0xFF, 0 })
+#define PIXEL_TRANSPARENT PIXEL_BLACK_TRANSPARENT
 
 typedef struct BITMAP_HEADER {
     u16	magic;
@@ -150,14 +159,62 @@ static inline bool bmp_safe(BMP* bmp, i64 x, i64 y) {
  *
  * @param a the first pixel.
  * @param b the second pixel.
+ * @param weight the weight, between 0 (a) and 1 (b).
  * @return the blended pixel.
  */
-static inline Pixel blend(Pixel a, Pixel b) {
+static inline Pixel blend(Pixel a, Pixel b, f64 weight) {
     Pixel result;
-    result.blue = ((u16)a.blue + b.blue) / 2;
-    result.green = ((u16)a.green + b.green) / 2;
-    result.red = ((u16)a.red + b.red) / 2;
-    result.alpha = ((u16)a.alpha + b.alpha) / 2;
+    result.red = (u8)((f64)a.red * (1.0 - weight) + (f64)b.red * weight);
+    result.green = (u8)((f64)a.green * (1.0 - weight) + (f64)b.green * weight);
+    result.blue = (u8)((f64)a.blue * (1.0 - weight) + (f64)b.blue * weight);
+    result.alpha = (u8)((f64)a.alpha * (1.0 - weight) + (f64)b.alpha * weight);
+    return result;
+}
+
+static inline Pixel pixel_over(Pixel front, Pixel back) {
+    Pixel result;
+    f64 front_alpha = (f64)front.alpha / 255.0;
+    f64 back_alpha = (f64)back.alpha / 255.0;
+    f64 alpha = front_alpha + back_alpha * (1.0 - front_alpha);
+    result.alpha = (u8)(alpha * 255.0);
+    if (result.alpha == 0) {
+        result.red = result.green = result.blue = 0;
+    }
+    else {
+        result.red = (u8)(((f64)front.red * front_alpha + (f64)back.red * back_alpha * (1.0 - front_alpha)) / alpha);
+        result.green = (u8)(((f64)front.green * front_alpha + (f64)back.green * back_alpha * (1.0 - front_alpha)) / alpha);
+        result.blue = (u8)(((f64)front.blue * front_alpha + (f64)back.blue * back_alpha * (1.0 - front_alpha)) / alpha);
+    }
+    return result;
+}
+
+/**
+ * @brief Convert RGBA Hex to Pixel.
+ *
+ * @param hex 0xAABBCCDD, AA: Red, BB: Green, CC: Blue, DD: Alpha.
+ * @return the converted pixel.
+ */
+static inline Pixel RGBA(u32 hex) {
+    Pixel result;
+    result.red = (hex >> 24) & 0xFF;
+    result.green = (hex >> 16) & 0xFF;
+    result.blue = (hex >> 8) & 0xFF;
+    result.alpha = hex & 0xFF;
+    return result;
+}
+
+/**
+ * @brief Convert RGB Hex to Pixel.
+ *
+ * @param hex 0xAABBCC, AA: Red, BB: Green, CC: Blue.
+ * @return the converted pixel.
+ */
+static inline Pixel RGB(u32 hex) {
+    Pixel result;
+    result.red = (hex >> 16) & 0xFF;
+    result.green = (hex >> 8) & 0xFF;
+    result.blue = hex & 0xFF;
+    result.alpha = 0xFF;
     return result;
 }
 // #endregion
