@@ -56,7 +56,7 @@ u64(*fill)(BMP* bmp, Pixel pixel);
 
 // usage
 BMP* bmp = create_bmp(100, 100, PIXEL_BLUE);
-u64 count = bmp->fill(bmp, PIXEL_RED);
+u64 count = Bmp.fill(bmp, PIXEL_RED);
 ```
 
 ### Copy
@@ -75,7 +75,7 @@ u64(*rect)(BMP* bmp, i64 from_x, i64 from_y, i64 width, i64 height, Pixel pixel)
 
 // usage
 BMP* bmp = create_bmp(100, 100, PIXEL_BLUE);
-u64 count = bmp->rect(bmp, 0, 0, 50, 100, PIXEL_RED);
+u64 count = Bmp.rect(bmp, 0, 0, 50, 100, PIXEL_RED);
 ```
 
 This function will draw a rectangle on the BMP.
@@ -88,7 +88,7 @@ u64(*circle)(BMP* bmp, i64 center_x, i64 center_y, i64 radius, Pixel pixel);
 
 // usage
 BMP* bmp = create_bmp(100, 100, PIXEL_BLUE);
-u64 count = bmp->circle(bmp, 50, 50, 30, PIXEL_RED);
+u64 count = Bmp.circle(bmp, 50, 50, 30, PIXEL_RED);
 ```
 
 This function will draw a filled circle on the BMP.
@@ -101,7 +101,7 @@ u64(*line)(BMP* bmp, i64 from_x, i64 from_y, i64 to_x, i64 to_y, u64 width, Pixe
 
 // usage
 BMP* bmp = create_bmp(100, 100, PIXEL_BLUE);
-u64 count = bmp->line(bmp, 20, 20, 80, 80, 5, PIXEL_RED);
+u64 count = Bmp.line(bmp, 20, 20, 80, 80, 5, PIXEL_RED);
 ```
 
 ### Custom Drawing
@@ -118,7 +118,7 @@ bool do_draw(struct BMP* bmp, i64 x, i64 y) {
 }
 
 BMP* bmp = create_bmp(100, 100, PIXEL_BLUE);
-u64 count = bmp->draw(bmp, PIXEL_RED, &do_draw);
+u64 count = Bmp.draw(bmp, PIXEL_RED, &do_draw);
 ```
 
 Passing a function pointer to the draw function will draw a pixel on the position if the condition is true.
@@ -164,7 +164,7 @@ You can also use this to make your pixel:
 
 ```c
 // Royal Blue, RGB: (0, 35, 102)
-bmp->fill(bmp, (Pixel){ 0, 35, 102, 0 });
+Bmp.fill(bmp, (Pixel){ 0, 35, 102, 0 });
 ```
 
 ### Pixel Blend

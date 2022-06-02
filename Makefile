@@ -1,13 +1,29 @@
-all: test
+# compiler
+CC = gcc
 
-test:
-	gcc -o colors -lm tests/colors.c
-	gcc -o plot -lm tests/plot.c
-	gcc -o maldives -lm tests/maldives.c
-	gcc -o random -lm tests/random.c
-	@./colors
-	@./plot
-	@./maldives
-	@./random
+# prod flags
+FLAGS = -lm
 
-.PHONY: all test
+# dev flags
+DEV_FLAGS = $(FLAGS) -Wall -Wextra -Werror -fsanitize=address -D DEBUG
+
+# example sources
+EXAMPLES = $(wildcard example/*.c)
+
+# example executables
+EXECUTABLES = $(EXAMPLES:.c=.out)
+
+.PHONY: list build clean
+
+all: build
+
+list:
+	@echo "examples: $(EXAMPLES)"
+
+build: $(EXECUTABLES)
+
+clean:
+	rm -f $(EXECUTABLES)
+
+$(EXECUTABLES):
+	$(CC) $(FLAGS) -o $@ $(@:.out=.c)
